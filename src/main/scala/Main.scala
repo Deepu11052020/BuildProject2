@@ -28,6 +28,15 @@ object Main {
     val convertedDF = superdfFilled.withColumn("Gender", when(col("Gender") === "F", "Female").otherwise("Male"))
     val superMarketdf_cleaned = convertedDF.withColumn("Tax_5_percent", format_number(col("Tax_5_percent").cast("Decimal(10,2)"), 2))
       .withColumn("Total", format_number(col("Total").cast("Decimal(10,2)"), 2))
+
+
+    // Load the second CSV file
+    val df2 = spark.read.option("header", true).csv(args(6))
+    // Append the second dataframe to the first one
+    val mergedDF = superMarketdf_cleaned.union(df2)
+    // Write the merged dataframe to the output path
+   // mergedDF.write.option("header", true).csv(args(1))
+
     //define schema for Branch
     val branchSchema = "BranchId Int, Branch_Name String, City_Name String, Start_Date String, End_Date String"
     val branchdf= spark.read
@@ -51,7 +60,8 @@ object Main {
     branchdf_cleaned.show()
     productdf_cleaned.show()
 
-    superMarketdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(1))
+    mergedDF.write.option("header", true).csv(args(1))
+    //superMarketdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(1))
     branchdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(3))
     productdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(5))
     /*
