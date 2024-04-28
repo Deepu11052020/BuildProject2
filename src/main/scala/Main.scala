@@ -51,9 +51,9 @@ object Main {
     branchdf_cleaned.show()
     productdf_cleaned.show()
 
-    superMarketdf_cleaned.coalesce(1).write.option("header", true).csv(args(1))
-    branchdf_cleaned.coalesce(1).write.option("header", true).csv(args(3))
-    productdf_cleaned.coalesce(1).write.option("header", true).csv(args(5))
+    superMarketdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(1))
+    branchdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(3))
+    productdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite")csv(args(5))
     /*
     //Hive
     decimalDF.write.mode("overwrite").saveAsTable("ukusmar.accounts_table")
