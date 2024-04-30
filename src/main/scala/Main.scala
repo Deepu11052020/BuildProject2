@@ -1,6 +1,7 @@
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, format_number, initcap, to_date, when}
+import org.apache.spark.sql.functions.{col, current_timestamp, format_number, initcap, to_date, when}
+
 import java.util.Properties
 
 object Main {
@@ -12,7 +13,7 @@ object Main {
     // Create SparkSession
     val spark = SparkSession.builder()
       .config(sparkConf)
-      //.enableHiveSupport()
+      .enableHiveSupport()
       .getOrCreate()
 
     // Define schema for the supermarket sales data
@@ -26,9 +27,9 @@ object Main {
     val superdf_D = sortedSuperdf.dropDuplicates()
     val superdfFilled = superdf_D.na.fill("Unknown")
     val convertedDF = superdfFilled.withColumn("Gender", when(col("Gender") === "F", "Female").otherwise("Male"))
-    val superMarketdf_cleaned = convertedDF.withColumn("Tax_5_percent", format_number(col("Tax_5_percent").cast("Decimal(10,2)"), 2))
+    val decimaldf = convertedDF.withColumn("Tax_5_percent", format_number(col("Tax_5_percent").cast("Decimal(10,2)"), 2))
       .withColumn("Total", format_number(col("Total").cast("Decimal(10,2)"), 2))
-
+    val superMarketdf_cleaned = decimaldf.withColumn("Created_date",current_timestamp())
 /*
     // Load the second CSV file
     val df2 = spark.read.option("header", true).csv(args(6))
@@ -44,7 +45,8 @@ object Main {
       .schema(branchSchema)
       .csv(args(2))
     // .csv("C:\\Users\\deepu\\Documents\\Project_SuperMarket\\BranchCity.csv")
-    val branchdf_cleaned = branchdf.withColumn("City_Name", initcap(col("City_Name")))
+    val citydf = branchdf.withColumn("City_Name", initcap(col("City_Name")))
+    val branchdf_cleaned = citydf.withColumn("Created_date",current_timestamp())
     //define schema for product Table
     val productLine = "ProductLine_Id Int,ProductLine_Desc String,Start_Date String,End_Date String"
     var producthdf= spark.read
@@ -54,8 +56,8 @@ object Main {
     //.csv("C:\\Users\\deepu\\Documents\\Project_SuperMarket\\ProductLine.csv")
     val formattedproducthdf= producthdf.withColumn("Start_Date", to_date(col("Start_Date"), "dd/MM/yyyy"))
       .withColumn("End_Date", to_date(col("End_Date"), "dd/MM/yyyy"))
-    val productdf_cleaned = formattedproducthdf.withColumn("ProductLine_Desc", initcap(col("ProductLine_Desc")))
-
+    val productdf_desc = formattedproducthdf.withColumn("ProductLine_Desc", initcap(col("ProductLine_Desc")))
+    val productdf_cleaned = productdf_desc.withColumn("Created_date",current_timestamp())
     superMarketdf_cleaned.show(100, false)
     branchdf_cleaned.show()
     productdf_cleaned.show()
@@ -63,13 +65,14 @@ object Main {
     superMarketdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite").csv(args(1))
     branchdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite").csv(args(3))
     productdf_cleaned.coalesce(1).write.option("header", true).mode("overwrite").csv(args(5))
-    /*
-    //Hive
-    decimalDF.write.mode("overwrite").saveAsTable("ukusmar.accounts_table")
-    branchdf_cleaned.write.mode("overwrite").saveAsTable("ukusmar.customers_table")
-    product_cleaned.write.mode("overwrite").saveAsTable("ukusmar.transactions_table")
 
-  */
+
+    //Hive
+    superMarketdf_cleaned.write.mode("overwrite").saveAsTable("ukusmar.accounts_table")
+    branchdf_cleaned.write.mode("overwrite").saveAsTable("ukusmar.customers_table")
+    productdf_cleaned.write.mode("overwrite").saveAsTable("ukusmar.transactions_table")
+
+
 
 
   }
